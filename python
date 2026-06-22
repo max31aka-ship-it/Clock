@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+# clock.py - Аналоговые часы на Python (Tkinter)
+"""
+Поддерживает: смену цвета, римские цифры, анимацию стрелок.
+"""
+import tkinter as tk
+import math
+import time
+from datetime import datetime
+
+class AnalogClock:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("🕐 ClockForge - Python")
+        self.root.geometry("500x550")
+        self.root.resizable(False, False)
+
+        # Параметры
+        self.radius = 200
+        self.center_x = 250
+        self.center_y = 250
+        self.face_color = "#f5f5dc"  # бежевый
+        self.hand_color = "#2c3e50"
+        self.second_color = "#e74c3c"
+        self.hour_color = "#2c3e50"
+        self.use_roman = False
+        self.show_seconds = True
+
+        # Canvas
+        self.canvas = tk.Canvas(self.root, width=500, height=500, bg=self.face_color)
+        self.canvas.pack()
+
+        # Панель управления
+        control_frame = tk.Frame(self.root)
+        control_frame.pack(pady=5)
+        tk.Button(control_frame, text="Цвет фона", command=self.change_face_color).pack(side=tk.LEFT, padx=5)
+        tk.Button(control_frame, text="Цвет стрелок", command=self.change_hand_color).pack(side=tk.LEFT, padx=5)
+        tk.Button(control_frame, text="Римские цифры", command=self.toggle_roman).pack(side=tk.LEFT, padx=5)
+
+        # Обновление
+        self.update_clock()
+        self.root.after(1000, self.update_clock)
+
+    def draw_face(self):
+        self.canvas.delete("all")
+        # Циферблат
+        self.canvas.create_oval(self.center_x - self.radius, self.center_y - self.radius,
+                                self.center_x + self.radius, self.center_y + self.radius,
+                                fill=self.face_color, outline="black", width=2)
+        # Метки и цифры
+        for i in range(12):
+            angle = math.radians(i * 30 - 90)
+            x1 = self.center_x + (self.radius - 20) * math.cos(angle)
+            y1 = self.center_y + (self.radius - 20) * math.sin(angle)
+            x2 = self.center_x + (self.radius - 5) * math.cos(angle)
+            y2 = self.center_y + (self.radius - 5) * math.sin(angle)
+            self.canvas.create_line(x1, y1, x2, y2, width=3, fill="black")
+            # Цифры
+            if self.use_roman:
+                roman = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"]
+                label = roman[i]
+            else:
+                label = str(i + 1 if i != 0 else 12)
+            text_x = self.center_x + (self.radius - 40) * math.cos(angle)
+            text_y = self.center_y + (self.radius - 40) * math.sin(angle)
+            self.canvas.create_text(text_x, text_y, text=label, font=("Arial", 14, "bold"), fill="black")
+
+    def draw_hands(self):
+        now = datetime.now()
+        hours = now.hour % 12
+        minutes = now.minute
+        seconds = now.second
+
+        # Часы
+        hour_angle = math.radians((hours + minutes/60) * 30 - 90)
+        hour_len = self.radius * 0.5
+        self.draw_hand(hour_angle, hour_len, self.hour_color, width=6)
+
+        # Минуты
+        min_angle = math.radians((minutes + seconds/60) * 6 - 90)
+        min_len = self.radius * 0.7
+        self.draw_hand(min_angle, min_len, self.hand_color, width=4)
+
+        # Секунды
+        if self.show_seconds:
+            sec_angle = math.radians(seconds * 6 - 90)
+            sec_len = self.radius * 0.8
+            self.draw_hand(sec_angle, sec_len, self.second_color, width=2)
+
+        # Центральная точка
+        self.canvas.create_oval(self.center_x - 8, self.center_y - 8,
+                                self.center_x + 8, self.center_y + 8,
+                                fill="black", outline="")
+
+    def draw_hand(self, angle, length, color, width):
+        x = self.center_x + length * math.cos(angle)
+        y = self.center_y + length * math.sin(angle)
+        self.canvas.create_line(self.center_x, self.center_y, x, y,
+                                fill=color, width=width, capstyle=tk.ROUND)
+
+    def update_clock(self):
+        self.draw_face()
+        self.draw_hands()
+        self.root.after(1000, self.update_clock)
+
+    def change_face_color(self):
+        import tkinter.colorchooser
+        color = tkinter.colorchooser.askcolor(color=self.face_color)[1]
+        if color:
+            self.face_color = color
+            self.canvas.config(bg=color)
+
+    def change_hand_color(self):
+        import tkinter.colorchooser
+        color = tkinter.colorchooser.askcolor(color=self.hand_color)[1]
+        if color:
+            self.hand_color = color
+
+    def toggle_roman(self):
+        self.use_roman = not self.use_roman
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = AnalogClock(root)
+    root.mainloop()
